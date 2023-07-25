@@ -2,13 +2,14 @@
 using ClosedXML.Excel;
 using ManejoPresupuesto.Models;
 using ManejoPresupuesto.Servicios;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Data;
 
 namespace ManejoPresupuesto.Controllers
 {
-    public class TransaccionesController: Controller
+    public class TransaccionesController : Controller
     {
         private readonly IServicioUsuarios servicioUsuarios;
         private readonly IRepositorioCuentas repositorioCuentas;
@@ -17,7 +18,7 @@ namespace ManejoPresupuesto.Controllers
         private readonly IMapper mapper;
         private readonly IServicioReportes servicioReportes;
 
-        public TransaccionesController(IServicioUsuarios servicioUsuarios, 
+        public TransaccionesController(IServicioUsuarios servicioUsuarios,
             IRepositorioCuentas repositorioCuentas,
             IRepositorioCategorias repositorioCategorias,
             IRepositorioTransacciones repositorioTransacciones,
@@ -42,7 +43,7 @@ namespace ManejoPresupuesto.Controllers
         public async Task<IActionResult> Semanal(int mes, int año)
         {
             var usuarioId = servicioUsuarios.ObtenerUsuarioId();
-            IEnumerable<ResultadoObtenerPorSemana> transaccionesPorSemana = 
+            IEnumerable<ResultadoObtenerPorSemana> transaccionesPorSemana =
                 await servicioReportes.ObtenerReporteSemanal(usuarioId, mes, año, ViewBag);
 
             var agrupado = transaccionesPorSemana.GroupBy(x => x.Semana).Select(x =>
@@ -210,11 +211,11 @@ namespace ManejoPresupuesto.Controllers
             return GenerarExcel(nombreArchivo, transacciones);
         }
 
-        private FileResult GenerarExcel(string nombreArchivo, 
+        private FileResult GenerarExcel(string nombreArchivo,
             IEnumerable<Transaccion> transacciones)
         {
             DataTable dataTable = new DataTable("Transacciones");
-            dataTable.Columns.AddRange(new DataColumn[] { 
+            dataTable.Columns.AddRange(new DataColumn[] {
                 new DataColumn("Fecha"),
                 new DataColumn("Cuenta"),
                 new DataColumn("Categoria"),
@@ -240,8 +241,8 @@ namespace ManejoPresupuesto.Controllers
                 using (MemoryStream stream = new MemoryStream())
                 {
                     wb.SaveAs(stream);
-                    return File(stream.ToArray(), 
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+                    return File(stream.ToArray(),
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         nombreArchivo);
                 }
             }
@@ -397,7 +398,7 @@ namespace ManejoPresupuesto.Controllers
                 transaccion.Monto *= -1;
             }
 
-            await repositorioTransacciones.Actualizar(transaccion, 
+            await repositorioTransacciones.Actualizar(transaccion,
                 modelo.MontoAnterior, modelo.CuentaAnteriorId);
 
             if (string.IsNullOrEmpty(modelo.UrlRetorno))
@@ -441,11 +442,15 @@ namespace ManejoPresupuesto.Controllers
             return cuentas.Select(x => new SelectListItem(x.Nombre, x.Id.ToString()));
         }
 
-        private async Task<IEnumerable<SelectListItem>> ObtenerCategorias(int usuarioId, 
+        private async Task<IEnumerable<SelectListItem>> ObtenerCategorias(int usuarioId,
             TipoOperacion tipoOperacion)
         {
             var categorias = await repositorioCategorias.Obtener(usuarioId, tipoOperacion);
-            return categorias.Select(x => new SelectListItem(x.Nombre, x.Id.ToString()));
+            var resultado = categorias
+                    .Select(x => new SelectListItem(x.Nombre, x.Id.ToString())).ToList();
+            var opcionPorDefecto = new SelectListItem("-- Seleccione una categoría --", "0", true);
+            resultado.Insert(0, opcionPorDefecto);
+            return resultado;
         }
 
         [HttpPost]
@@ -455,5 +460,7 @@ namespace ManejoPresupuesto.Controllers
             var categorias = await ObtenerCategorias(usuarioId, tipoOperacion);
             return Ok(categorias);
         }
+
+        
     }
 }
