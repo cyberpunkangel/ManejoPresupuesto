@@ -19,12 +19,32 @@ namespace ManejoPresupuesto.Servicios
 
         public int ObtenerUsuarioId()
         {
-            if (httpContext.User.Identity.IsAuthenticated)
+            //if (httpContext.User.Identity.IsAuthenticated)
+            //{
+            //    var idClaim = httpContext.User
+            //            .Claims.Where(x => x.Type == ClaimTypes.NameIdentifier).FirstOrDefault();
+            //    var id = int.Parse(idClaim.Value);
+            //    return id;
+            //}
+            // Validar si el HttpContext está disponible
+            if (httpContext == null)
             {
-                var idClaim = httpContext.User
-                        .Claims.Where(x => x.Type == ClaimTypes.NameIdentifier).FirstOrDefault();
-                var id = int.Parse(idClaim.Value);
-                return id;
+                throw new ApplicationException("El contexto HTTP no está disponible.");
+            }
+
+            // Validar si el usuario está autenticado
+            if (httpContext.User.Identity != null && httpContext.User.Identity.IsAuthenticated)
+            {
+                var idClaim = httpContext.User.Claims
+                    .FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier);
+
+                // Validar si el claim del ID existe
+                if (idClaim == null || string.IsNullOrWhiteSpace(idClaim.Value))
+                {
+                    throw new ApplicationException("No se pudo obtener el ID del usuario.");
+                }
+
+                return int.Parse(idClaim.Value);
             }
             else
             {
