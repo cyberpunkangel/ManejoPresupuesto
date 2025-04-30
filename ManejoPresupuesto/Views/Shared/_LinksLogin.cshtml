@@ -8,10 +8,8 @@
             <span class="nav-link text-dark">Hola, @User.Identity.Name</span>
         </li>
         <li class="nav-item">
-            <form class="form-inline" asp-action="logout" asp-controller="usuarios">
-                <button type="submit" class="nav-link btn btn-link text-dark">
-                    Logout
-                </button>
+            <form class="form-inline" asp-action="logout" asp-controller="usuarios" method="post" id="logoutForm">
+                <button type="submit" class="btn btn-link nav-link">Cerrar sesión</button>
             </form>
         </li>
     }
